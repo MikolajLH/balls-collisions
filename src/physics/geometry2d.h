@@ -3,6 +3,7 @@
 #include <cmath>
 #include <numbers>
 #include <vector>
+#include <print>
 
 namespace gm2d
 {
@@ -65,8 +66,6 @@ namespace gm2d
 	Vector operator-(const Vector& p, const Vector& q);
 
 	Vector operator-(const Vector& v);
-
-
 	
 	Float dot(const Vector& p, const Vector& q);
 	
@@ -107,6 +106,10 @@ namespace gm2d
 
 			operator Vector()const;
 			DirectionVector operator-()const;
+
+			DirectionVector perp()const;
+
+			Point as_point()const;
 		private:
 			DirectionVector(Float x, Float y);
 			Float x, y;
@@ -121,6 +124,7 @@ namespace gm2d
 			//| a b |
 			//| c d |
 			Matrix(Float a, Float b, Float c, Float d);
+			Matrix(const Vector& column_1, const Vector& column_2);
 			Matrix() = default;
 
 			static Matrix id();
@@ -133,6 +137,7 @@ namespace gm2d
 			static Matrix shearing_y(Float k);
 			static Matrix reflection(const Vector&);
 			static Matrix orthogonal_projection(const Vector&);
+			static Matrix change_basis(const Vector& new_basis_1, const Vector& new_basis_2);
 			
 
 			Matrix operator*(const Matrix& other)const;
@@ -150,6 +155,10 @@ namespace gm2d
 			Matrix transpose()const;
 			Float det()const;
 	};
+
+	//Vector world_to_screen(Vector v, const Vector& screen_origin, const Vector& screen_basis_x, const Vector& screen_basis_y);
+
+	//Point change_basis(Point p, const Vector& new_basis_1, const Vector& new_basis_2);
 
 
 	Point orthogonal_projection(const Point beg, const Point end, const Point p);
@@ -184,14 +193,14 @@ namespace gm2d
 	
 	class LineSegment
 	{
-		public:
-			Point beg;
-			Point end;
+	public:
+		Point beg;
+		Point end;
 
-			LineSegment(const Point& beg, const Point& end);
+		LineSegment(const Point& beg, const Point& end);
 
-			Point closest_point(const Point& p)const;
-			bool contains(const Point& p)const;
+		Point closest_point(const Point& p)const;
+		bool contains(const Point& p)const;
 	};
 
 	std::vector<Point> line_segments_intersection(const LineSegment& seg_1, const LineSegment& seg_2);
@@ -199,12 +208,29 @@ namespace gm2d
 
 	class Circle
 	{
-		public:
-			Point center;
-			Float radius;
+	public:
+		Point center;
+		Float radius;
 
-			explicit Circle(Point center = Point(Float(0), Float(0)), Float radius = Float(1));
+		explicit Circle(Point center = Point(Float(0), Float(0)), Float radius = Float(1));
 
-			bool contains(const Point&)const;
+		bool contains(const Point&)const;
+	};
+
+
+	class Stadium
+	{
+	public:
+		Point beg;
+		Point end;
+		Float radius;
+
+		Stadium(const Point& beg, const Point& end, Float radius);
+
+		bool contains(const Point&)const;
+
+		Circle closest_circle(const Point&)const;
+
+		Vector normal()const;
 	};
 }

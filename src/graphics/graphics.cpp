@@ -76,4 +76,26 @@ namespace gfx
 		solid_color_brush->SetColor(c);
 		render_target->DrawLine(D2D1::Point2F(x0, y0), D2D1::Point2F(x1, y1), solid_color_brush.Get(), t);
 	}
+
+	void WindowRenderTarget::fill_quad(
+		float x1, float y1,
+		float x2, float y2,
+		float x3, float y3,
+		float x4, float y4,
+		D2D1::ColorF c) {
+
+		Microsoft::WRL::ComPtr<ID2D1PathGeometry>quad_geometry{};
+		FactorySingleton::get().CreatePathGeometry(quad_geometry.GetAddressOf());
+		ID2D1GeometrySink* p_sink = nullptr;
+		quad_geometry->Open(&p_sink);
+		p_sink->BeginFigure(D2D1::Point2F(x1, y1), D2D1_FIGURE_BEGIN_FILLED);
+		p_sink->AddLine(D2D1::Point2F(x2, y2));
+		p_sink->AddLine(D2D1::Point2F(x3, y3));
+		p_sink->AddLine(D2D1::Point2F(x4, y4));
+		p_sink->EndFigure(D2D1_FIGURE_END_CLOSED);
+		p_sink->Close();
+		p_sink->Release();
+		solid_color_brush->SetColor(c);
+		render_target->FillGeometry(quad_geometry.Get(), solid_color_brush.Get());
+	}
 }

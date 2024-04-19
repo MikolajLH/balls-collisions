@@ -151,6 +151,14 @@ namespace gm2d
 		return DirectionVector(-x, -y);
 	}
 
+	DirectionVector DirectionVector::perp()const {
+		return DirectionVector(-y, x);
+	}
+
+	Point DirectionVector::as_point()const {
+		return Point(x, y);
+	}
+
 	Float length(const DirectionVector& v) {
 		return Float(1);
 	}
@@ -158,6 +166,11 @@ namespace gm2d
 
 	Matrix::Matrix(Float a, Float b, Float c, Float d)
 		: a{ a }, b{ b }, c{ c }, d{ d }
+	{}
+
+	Matrix::Matrix(const Vector& basis_x, const Vector& basis_y)
+		: Matrix(basis_x.x, basis_y.x,
+				 basis_x.y, basis_y.y)
 	{}
 
 	Matrix Matrix::id() {
@@ -219,6 +232,10 @@ namespace gm2d
 			u.x * u.x * d, u.x * u.y * d,
 			u.x * u.y * d, u.y * u.y * d);
 	}
+
+	Matrix Matrix::change_basis(const Vector& new_basis_1, const Vector& new_basis_2) {
+		return Matrix(new_basis_1, new_basis_2);
+	}
 	
 	Matrix Matrix::operator*(Float s)const {
 		return Matrix(a * s, b * s, c * s, d * s);
@@ -264,6 +281,16 @@ namespace gm2d
 		return Matrix(d, -b, -c, a);
 	}
 
+
+	//Vector world_to_screen(Vector v, const Vector& screen_origin, const Vector& screen_basis_x, const Vector& screen_basis_y) {
+	//	return Matrix(screen_basis_x, screen_basis_y) * v + screen_origin;
+	//}
+
+	//Point change_basis(Point p, const Vector& new_basis_1, const Vector& new_basis_2) {
+	//	const auto M = Matrix::change_basis(new_basis_1, new_basis_2);
+	//	const Vector origin = M * Vector{};
+	//	return (M * (p - origin).as_vector()).as_point() + origin;
+	//}
 
 	Point orthogonal_projection(const Point beg, const Point end, const Point p) {
 		const Vector v(beg, end);
@@ -340,8 +367,66 @@ namespace gm2d
 		return (*this)((x - point.x) / ((Vector)direction).x).y;
 	}
 
+	bool Line::contains(const Point& p)const {
+		return is_nearly_zero(dot(Vector(point, p), direction));
+	}
+
 	std::vector<Point> lines_intersection(const Line& line_1, const Line& line_2) {
 		return lines_intersection(line_1.point, line_1(Float(1)), line_2.point, line_2(Float(1)));
+	}
+
+	LineSegment::LineSegment(const Point& p, const Point& q)
+		: beg{ p }, end{ q }
+	{}
+
+	Point LineSegment::closest_point(const Point& p)const {
+		const auto proj = orthogonal_projection(beg, end, p);
+		if (contains(proj)) {
+			return proj;
+		}
+		const Float d_beg = distance2(p, beg);
+		const Float d_end = distance2(p, end);
+
+		return d_beg < d_end ? beg : end;
+	}
+
+	bool LineSegment::contains(const Point& p)const {
+		const auto proj = orthogonal_projection(beg, end, p);
+		return
+			are_nearly_equal(p.x, proj.x) and
+			are_nearly_equal(p.y, proj.y) and
+			distance2(p, beg) <= distance2(beg, end) and
+			distance2(p, end) <= distance2(beg, end);
+	}
+
+
+	std::vector<Point> line_segments_intersection(const LineSegment& seg_1, const LineSegment& seg_2) {
+		const Vector direction_1(seg_1.beg, seg_2.end);
+		const Vector direction_2(seg_2.beg, seg_2.end);
+
+		const Float Det = det(direction_1, -direction_2);
+
+		const Float Det_1 = det(Vector(seg_1.beg, seg_2.beg), -direction_2);
+		const Float Det_2 = det(direction_1, Vector(seg_1.beg, seg_2.beg));
+
+		std::vector<Point>points{};
+
+		if (is_nearly_zero(Det)) {
+			if (is_nearly_zero(Det_1) or is_nearly_zero(Det_2)) {
+				if (seg_1.contains(seg_2.beg) or seg_1.contains(seg_2.end) or seg_2.contains(seg_1.beg) or seg_2.contains(seg_1.end)) {
+					points.push_back(seg_1.beg);
+					points.push_back(seg_2.beg);
+				}
+			}
+		}
+		else {
+			const Float t = Det_1 / Det;
+			const Point lines_cross_point = seg_1.beg + t * direction_1;
+			if (seg_1.contains(lines_cross_point) and seg_2.contains(lines_cross_point))
+				points.push_back(lines_cross_point);
+		}
+
+		return points;
 	}
 
 	Circle::Circle(Point center, Float r)
@@ -350,5 +435,21 @@ namespace gm2d
 
 	bool Circle::contains(const Point& p)const {
 		return distance2(center, p) <= radius * radius;
+	}
+
+	Stadium::Stadium(const Point& beg, const Point& end, Float radius)
+		: beg{ beg }, end{ end }, radius{ radius }
+	{}
+
+	bool Stadium::contains(const Point& p)const {
+		return closest_circle(p).contains(p);
+	}
+
+	Circle Stadium::closest_circle(const Point& p)const {
+		return Circle(LineSegment(beg, end).closest_point(p), radius);
+	}
+
+	Vector Stadium::normal()const {
+		return Vector(beg, end).normalize().perp();
 	}
 }

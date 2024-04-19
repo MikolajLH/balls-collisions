@@ -36,6 +36,13 @@ namespace gfx
 			void fill_rectangle(float x, float y, float w, float h, D2D1::ColorF c);
 
 			void draw_line(float x0, float y0, float x1, float y1, D2D1::ColorF c, float t = 1.f);
+
+			void fill_quad(
+				float x1, float y1,
+				float x2, float y2,
+				float x3, float y3,
+				float x4, float y4,
+				D2D1::ColorF c);
 		private:
 			Microsoft::WRL::ComPtr<ID2D1HwndRenderTarget>render_target;
 			Microsoft::WRL::ComPtr<ID2D1SolidColorBrush>solid_color_brush;
